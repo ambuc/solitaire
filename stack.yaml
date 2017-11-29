@@ -1,0 +1,8 @@
+flags: {}
+extra-package-dbs: []
+packages:
+- .
+extra-deps:
+- brick-0.26
+- word-wrap-0.4.1
+resolver: lts-9.13
