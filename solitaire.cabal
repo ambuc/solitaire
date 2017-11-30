@@ -25,6 +25,8 @@ library
                      , containers
                      , microlens
                      , microlens-th
+                     , random
+                     , random-shuffle
                      , split
                      , vty
   default-language:    Haskell2010
@@ -38,6 +40,8 @@ executable solitaire-exe
                      , containers
                      , microlens
                      , microlens-th
+                     , random
+                     , random-shuffle
                      , solitaire
                      , split
                      , vty

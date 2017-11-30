@@ -28,7 +28,6 @@ rrGhost _ = withBorderStyle ghostRounded $ border $ str "  "
           , bsHorizontal    = ' '           , bsVertical      = ' '
           }
 
-
 rrDCard :: Axis -> Int -> DCard -> Widget Ext
 rrDCard axis idx dc = reportExtent (DCX dc) $ cropBy margin $ rrCard inner
   where 
@@ -44,9 +43,9 @@ rrDCard axis idx dc = reportExtent (DCX dc) $ cropBy margin $ rrCard inner
         mkMargin EW _ FaceDown = 3
     inner  = if _facedir dc == FaceDown then Nothing else Just (_card dc)
     rrCard :: Maybe Card -> Widget Ext
-    rrCard Nothing           =              cardStyle $ str "<>"
-    rrCard (Just (Card r s)) = withAttr (attrName c) $ cardStyle 
-                                 $ str $ show r ++ show s
+    rrCard Nothing           = cardStyle $ str "<>"
+    rrCard (Just (Card r s)) = withAttr (attrName c) 
+                             $ cardStyle $ str $ show r ++ show s
       where c = if Red == toColor s then "redCard" else "blackCard"
 
 rrDCards :: Axis -> [DCard] -> Widget Ext
@@ -60,8 +59,8 @@ rrPile :: Axis -> Pile -> Widget Ext
 rrPile axis p
   | null (_cards p)        = rrGhost p                      -- else, non-null
   | _display p == Stacked  = rrDCard NS 0 (head $ _cards p) -- else, splayed
-  | _display p == Sp3      = rrDCards axis $ reverse $ take 3  $ _cards p
-  | _display p == Splayed  = rrDCards axis $ reverse $ _cards p
+  | _display p == Sp3      = rrDCards axis $ reverse $ take 3 $ _cards p
+  | _display p == Splayed  = rrDCards axis $ reverse $          _cards p
   | otherwise              = rrGhost p                      -- shouldn't happen
 
 rrPiles :: Axis -> Axis -> [Pile] -> Widget Ext

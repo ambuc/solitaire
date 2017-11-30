@@ -2,14 +2,15 @@
 {-# LANGUAGE ImpredicativeTypes #-}
 
 module Movement
-  ( alter
+  ( stockL, wasteL, tableLN, foundLN
+  , move, attempt
   ) where
 
 import Lens.Micro
 import Lens.Micro.TH      (makeLenses)
 import Data.Functor.Const (Const)
 import Data.List          (findIndex)
-import Data.Maybe         (fromJust, isJust, isNothing)
+import Data.Maybe         (fromJust, isJust, isNothing, fromMaybe)
 
 import CardTypes
 import Utils
@@ -19,83 +20,97 @@ import Utils
 makeLenses ''DCard
 makeLenses ''Pile
 makeLenses ''GSt
+makeLenses ''Field
 
 --------------------------------------------------------------------------------
 
-stockL :: Lens' GSt [DCard] --all
-stockL = lens (\s -> s ^. stock.cards & each.facedir .~ FaceUp)               
-              (\s dcs -> s & stock.cards .~ (dcs & each.facedir .~ FaceDown)) 
+stockL :: Lens' Field [DCard] --all
+stockL = lens (\f -> f ^. stock.cards & each.facedir .~ FaceUp)               
+              (\f dcs -> f & stock.cards .~ (dcs & each.facedir .~ FaceDown)) 
 
-wasteL :: Lens' GSt [DCard]
-wasteL = lens (\s -> s ^. waste.cards)           
-              (\s dcs -> s & waste.cards .~ dcs) 
+wasteL :: Lens' Field [DCard]
+wasteL = lens (\f -> f ^. waste.cards)           
+              (\f dcs -> f & waste.cards .~ dcs) 
 
-tableauLN :: Int -> Lens' GSt Pile
-tableauLN n = lens (\s -> s ^. tableau ^?! ix n)     
-                   (\s p -> s & tableau . ix n .~ p) 
+tableLN :: Int -> Lens' Field Pile
+tableLN n = lens (\f -> f ^. table ^?! ix n)     
+                 (\f p -> f & table . ix n .~ p) 
 
-foundationLN :: Int -> Lens' GSt Pile
-foundationLN n = lens (\s -> s ^. foundation ^?! ix n)    
-                      (\s p -> s & foundation . ix n .~ p) 
+foundLN :: Int -> Lens' Field Pile
+foundLN n = lens (\f -> f ^. found ^?! ix n)    
+                 (\f p -> f & found . ix n .~ p) 
 
-allCands
-  :: [(Pile -> Data.Functor.Const.Const Pile Pile)
-      -> GSt -> Data.Functor.Const.Const Pile GSt]
-allCands = map foundationLN [0..3] ++ map tableauLN [0..6] 
+--------------------------------------------------------------------------------
 
-canMove :: Card -> GSt -> Bool
-canMove c s = isJust $ findIndex (\l -> canPlace c (s ^. l)) allCands
+maybeAnywhere :: Card -> Field -> Maybe Int
+maybeAnywhere c f = findIndex (\l -> canPlace c (f ^. l)) 
+                  $ map foundLN [0..3] ++ map tableLN [0..6] 
+maybeTableau  :: Card -> Field -> Maybe Int
+maybeTableau  c f = findIndex (\l -> canPlace c (f ^. l)) 
+                  $ map tableLN [0..6] 
 
-mkMove :: Functor f => Card -> GSt -> (Pile -> f Pile) -> GSt -> f GSt
-mkMove c s = if idx <= 3
-               then foundationLN idx
-               else tableauLN (idx - 4)
-  where idx = fromJust $ findIndex (\l -> canPlace c (s ^. l)) allCands
+--------------------------------------------------------------------------------
 
-alter :: [Ext] -> GSt -> GSt
+-- returns true if a card could be moved anywhere else in the field of play
+canMove :: Int -> Card -> Field -> Bool
+canMove 0 c f = isJust $ maybeAnywhere c f
+canMove _ c f = isJust $ maybeTableau  c f
+
+--------------------------------------------------------------------------------
+
+-- returns a (Lens' Field Pile) to the next valid move location 
+mkMove :: Functor f => Int -> Card -> Field 
+                    -> (Pile -> f Pile) -> Field -> f Field
+mkMove 0 c f = if idx <= 3
+                 then foundLN idx
+                 else tableLN (idx - 4)
+  where idx = fromJust $ maybeAnywhere c f
+mkMove _ c f = tableLN $ fromJust $ maybeTableau  c f
+
+--------------------------------------------------------------------------------
+
+-- actually performs the move, if possible
+move :: [Ext] -> Field -> Field
+move extents f = fromMaybe f (attempt extents f)
+
+--------------------------------------------------------------------------------
+
+-- attempts to perform the move and returns a maybe field
+attempt :: [Ext] -> Field -> Maybe Field
 --if we click the empty stock icon, recall the entire waste
-alter [StockX] s = let load = s ^.wasteL
-                   in  s & stockL %~ (reverse load ++)
-                         & wasteL .~ []
+attempt [StockX] f = let load = f ^. wasteL
+                     in  Just $ f & stockL %~ (reverse load ++)
+                                  & wasteL .~ []
 --if we click the non-empty stock icon, swap 3 (or less) from the stock to the
 --waste
-alter [_, StockX] s = let load = s ^. stockL & take 3
-                      in  s & stockL %~ drop 3 
-                            & wasteL %~ (reverse load ++)
-
+attempt [_, StockX] f = let load = f ^. stockL & take 3
+                        in  Just $ f & stockL %~ drop 3 
+                                     & wasteL %~ (reverse load ++)
+  
 --if we click the very top card of the waste, attempt to move it
-alter [DCX dc@DCard{_card=c}, IdX 0, WasteX] s
-  = if canMove c s
-      then s & mkMove c s %~ (\p -> p & cards %~ (dc:))
-             & wasteL %~ drop 1
-      else s
-
---if we click the very top card of a column of the tableau, attempt to move it 
---alone
-alter [DCX dc@DCard{_card=c}, IdX 0, IdX col, TabX] s
-  = if canMove c s
-      then s & mkMove c s %~ (\p -> p & cards %~ (dc:))
-             & tableauLN col %~ (\p -> p & cards %~ drop 1)
-             & tableauLN col %~ (\p -> p & cards . _head . facedir .~ FaceUp)
-      else s
+attempt [DCX dc@DCard{_card=c}, IdX 0, WasteX] f
+  = if canMove 0 c f
+      then Just $ f & mkMove 0 c f %~ (\p -> p & cards %~ (dc:))
+                    & wasteL %~ drop 1
+      else Nothing
 
 --if we click anything but the very top card of a tableau, it won't be alone.
 --also it has to be face up.
-alter [DCX DCard{_facedir=FaceUp, _card=c}, IdX row, IdX col, TabX] s
-  = if canMove c s
-      then s & mkMove c s %~ (\p -> p & cards %~ (load ++ ))
-             & tableauLN col %~ (\p -> p & cards %~ drop (succ row))
-             & tableauLN col %~ (\p -> p & cards . _head . facedir .~ FaceUp)
-      else s
+attempt [DCX DCard{_facedir=FaceUp, _card=c}, IdX row, IdX col, TableX] f
+  = if canMove row c f
+      then Just $ f & mkMove row c f %~ (\p -> p & cards %~ (load ++))
+                    & tableLN col %~ (\p -> p & cards %~ drop (succ row))
+                    & tableLN col %~ (\p -> p & cards . _head . facedir .~ FaceUp)
+      else Nothing
   where
-    load  = s ^. tableauLN col . cards & take (succ row) 
+    load  = f ^. tableLN col . cards & take (succ row) 
 
 --if we click anything in the foundation it'll be the head of the pile
-alter [DCX dc@DCard{_card=c}, IdX row, FoundationX] s
-  = if canMove c s
-      then s & mkMove c s %~ (\p -> p & cards %~ (dc:))
-             & foundationLN row %~ (\p -> p & cards %~ drop 1)
-      else s
+attempt [DCX dc@DCard{_card=c}, IdX row, FoundX] f
+  = if canMove row c f
+      then Just $ f & mkMove row c f %~ (\p -> p & cards %~ (dc:))
+                    & foundLN row %~ (\p -> p & cards %~ drop 1)
+      else Nothing
 
 --otherwise do nothing
-alter _ s = s
+attempt _ f = Nothing
