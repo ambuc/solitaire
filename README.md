@@ -18,6 +18,10 @@
 ╰──────────────────────────────────────╯                                       
 ```
 
+## Essay
+For more background on this project, [read the blog
+post](http://jbuckland.com/solitaire/) I wrote about developing it.
+
 ## Prerequisites
 You'll need to install:
 - [haskell](https://www.haskell.org/platform/), a standardized, general-purpose
