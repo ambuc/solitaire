@@ -1,7 +1,6 @@
 name:                solitaire
 version:             0.1.0.0
 synopsis:            Solitaire built with Brick
--- description:
 homepage:            https://github.com/ambuc/solitaire#readme
 license:             BSD3
 license-file:        LICENSE
@@ -15,8 +14,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib
-                     , CardTypes
+  exposed-modules:     CardTypes
                      , Movement
                      , Render
                      , Utils

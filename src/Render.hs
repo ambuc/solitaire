@@ -1,16 +1,17 @@
 module Render
-  ( rrPile
-  , rrPiles
+  ( drawUI
   ) where
 
-import Brick.AttrMap 
-import Brick.Types 
-import Brick.Widgets.Border 
+import Brick.AttrMap              (attrName)
+import Brick.Types                (Widget, Padding(Pad))
+import Brick.Widgets.Border       (vBorder, border, borderWithLabel)
 import Brick.Widgets.Border.Style 
-import Brick.Widgets.Core 
+import Brick.Widgets.Center       (center)
+import Brick.Widgets.Core
+import Text.Printf                (printf)
 
 import CardTypes
-import Utils
+import Utils (toColor, hasWon)
 
 -------------------------------------------------------------------------------
 
@@ -43,7 +44,9 @@ rrDCard axis idx dc = reportExtent (DCX dc)   -- by necessity displaycards
         inner  = if _facedir dc == FaceDown then Nothing else Just (_card dc)
 
 rrCard :: Maybe Card -> Widget Ext               -- renders card internals
-rrCard Nothing           = cardStyle $ str "<>"  -- either a card back
+rrCard Nothing           = withAttr (attrName "bold")
+                         $ cardStyle             -- either a card back
+                         $ str ([toEnum 0x03BB, '='] :: String)
 rrCard (Just (Card r s)) = withAttr (attrName c) -- or a card front.
                          $ cardStyle $ str $ show r ++ show s
   where c = if Red == toColor s then "redCard" else "blackCard"
@@ -69,3 +72,45 @@ rrPiles ax ax' ps = nBox [ reportExtent (IdX idx) $ rrPile ax' p
                          | (p,idx) <- zip ps [0..] 
                          ]
   where nBox = if ax == NS then vBox else hBox -- along its own 2ndary axis
+
+
+mkButton :: Action -> Widget Ext
+mkButton action = reportExtent (ActionX action)
+                $ padBottom (Pad 1)
+                $ str "[" <+> 
+                ( withAttr (attrName "btnAttr")
+                $ str (show action)
+                ) <+> str "]"
+
+scoreBox :: Int -> Widget Ext
+scoreBox i = padBottom (Pad 1)
+           $ str "Score: "
+         <+> withAttr (attrName "bold") (str $ printf "%3d" i)
+
+movesBox :: Int -> Widget Ext
+movesBox i = padBottom (Pad 1)
+           $ str "Moves: "
+         <+> withAttr (attrName "bold") (str $ printf "%3d" i)
+
+drawUI :: GSt -> [ Widget Ext ]
+drawUI state = [ui]
+  where 
+    ui = center $ setAvailableSize (120,29) 
+       $ board <+> rSidebar
+    title      = if hasWon state then " Nice! " else " Solitaire "
+    board      = withBorderStyle unicodeRounded
+               $ borderWithLabel (str title) 
+               $ drawField $ _field state
+    rSidebar   = padAll 1
+               $ scoreBox (_score state)
+             <=> movesBox (_moves state)
+             <=> vBox (map mkButton [New, Undo])
+
+    drawField :: Field -> Widget Ext
+    drawField f = (stock <=> waste) <+> vBorder <+> tableau 
+                                    <+> vBorder <+> foundation
+      where stock      = reportExtent StockX $ rrPile     NS $ _stock f
+            waste      = reportExtent WasteX $ rrPile     NS $ _waste f
+            tableau    = reportExtent TableX $ rrPiles EW NS $ _table f
+            foundation = reportExtent FoundX $ rrPiles NS NS $ _found f
+

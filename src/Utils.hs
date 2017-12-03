@@ -1,21 +1,19 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Utils
-  ( toColor
-  , canPlace
+  ( canPlace
   , hasWon
-  , newGame
-  , undoMove
-  , mkInitS
   , initialDeal
+  , mkInitS
+  , newGame
+  , toColor
+  , undoMove
   ) where
 
-import Data.Maybe (fromJust)
 import Data.List.Split (splitPlaces)
-import qualified Brick.Types as T
-import Lens.Micro
+import Lens.Micro ( (^.), (%~), (&), (.~), (^?!), _head )
 import Lens.Micro.TH (makeLenses)
-import qualified System.Random         as R (next, newStdGen, StdGen)
+import qualified System.Random         as R (next, StdGen)
 import qualified System.Random.Shuffle as R (shuffle')
 
 import CardTypes
@@ -97,7 +95,7 @@ initialDeal = [ Card r s | r <- allRanks, s <- allSuits ]
 
 -- take a random generator and create a game state...
 mkInitS :: R.StdGen -> GSt
-mkInitS seed = GSt { _field = field , _logLine = "..."
+mkInitS seed = GSt { _field = field 
                    , _seed  = seed  , _history = [] 
                    , _score = 0     , _moves = 0
                    }

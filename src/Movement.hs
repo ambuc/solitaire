@@ -5,16 +5,16 @@ module Movement
   ( doMove
   ) where
 
-import Lens.Micro
-import Lens.Micro.TH      (makeLenses)
-import Data.Functor.Const (Const)
-import Data.List          (findIndex, nub)
-import Data.Maybe         (fromJust, isJust, isNothing, fromMaybe)
+import Data.List     (findIndex)
+import Data.Maybe    (fromJust, isJust)
+import Lens.Micro    ( Getting, Lens'
+                     , (%~), (&), (.~), (^.), (^?!)
+                     , each, ix, lens, _head
+                     )
+import Lens.Micro.TH (makeLenses)
 
 import CardTypes
-import Utils
-
---------------------------------------------------------------------------------
+import Utils     (canPlace)
 
 makeLenses ''DCard
 makeLenses ''Pile
@@ -85,8 +85,6 @@ mkSpot pLs c f = fromJust $ findSpot pLs c f
 -- * clicking a top foundation card tries a move to the tableau
 -- * clicking any tableau card tries a move to the tableau or foundation,
 --   depending on row
---
---scoreing
 
 tryMove :: [Ext] -> Field -> (Field, Int->Int)
 
@@ -146,7 +144,6 @@ canMove _ DCard{_card=c}           f = isSpot inTableau c f
 
 --------------------------------------------------------------------------------
 
-
 -- returns a (Lens' Field Pile) to the next valid move location 
 -- * if we're moving from a row 0, it could be to the foundation or to the tableau
 -- * otherwise we're certainly moving to the tableau
@@ -173,5 +170,4 @@ doMove s exs = if wasChange
     oldField = s ^. field
     oldScore = s ^. score
     (newField, scoreFn) = tryMove exs oldField
-
 

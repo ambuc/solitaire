@@ -1,18 +1,18 @@
 module CardTypes
-  ( Rank(..) 
-  , Suit(..)
-  , Color(..)
+  ( Action(..)
+  , Axis(..)
   , Card(..)
-  , FaceDir(..)
+  , Color(..)
   , DCard(..)
   , DisplayMode(..)
-  , PileType(..)
-  , Pile(..)
+  , Ext(..)
+  , FaceDir(..)
   , Field(..)
   , GSt(..)
-  , Axis(..)
-  , Action(..)
-  , Ext(..)
+  , Pile(..)
+  , PileType(..)
+  , Rank(..) 
+  , Suit(..)
   ) where
 
 import qualified System.Random as R (StdGen)
@@ -64,7 +64,6 @@ data Field = Field { _stock :: Pile      -- fields are game wrappers for the
 
                                       --   the gamestate is a record for the
 data GSt = GSt { _field   :: Field    --   field as seen above
-               , _logLine :: String   -- , a logLine for debugging
                , _seed    :: R.StdGen -- , and a random seed to be passed thru
                , _history :: [(Field, Int)]  -- , and a list of previous fields
                , _score   :: Int
