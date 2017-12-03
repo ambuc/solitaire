@@ -1,6 +1,24 @@
 # solitaire.hs
 
-# Prerequisites
+```ruby
+╭───────────── Solitaire ──────────────╮                                       
+│╭──╮│╭──╮╭──╮╭──╮╭──╮╭──╮╭──╮╭──╮│╭  ╮│ Score:   0                            
+││λ=││╭──╮╭──╮╭──╮╭──╮╭──╮╭──╮│7♠││    │                                       
+│╰──╯│╭──╮╭──╮╭──╮╭──╮╭──╮│K♥│╰──╯│╰  ╯│ Moves:   0                            
+│╭──╮│╭──╮╭──╮╭──╮╭──╮│J♣│╰──╯    │╭  ╮│                                       
+││3♠││╭──╮╭──╮╭──╮│6♦│╰──╯        │    │ [New]                                 
+│╭──╮│╭──╮╭──╮│9♣│╰──╯            │╰  ╯│                                       
+││3♥││╭──╮│Q♠│╰──╯                │╭  ╮│ [Undo]                                
+│╭──╮││4♠│╰──╯                    │    │                                       
+││7♦││╰──╯                        │╰  ╯│                                       
+│╰──╯│                            │╭  ╮│                                       
+│    │                            │    │                                       
+│    │                            │╰  ╯│                                       
+│    │                            │    │                                       
+╰──────────────────────────────────────╯                                       
+```
+
+## Prerequisites
 You'll need to install:
 - [haskell](https://www.haskell.org/platform/), a standardized, general-purpose
   purely functional programming language, with non-strict semantics and strong
@@ -8,7 +26,7 @@ You'll need to install:
 - [stack](https://docs.haskellstack.org/en/stable/README/), a cross-platform
   program for developing Haskell projects.
 
-# Playing `solitaire`
+## Playing `solitaire`
 You can clone this repo and use `stack` to build and run the executable like so:
 ```
 git clone https://github.com/ambuc/solitaire.git
@@ -17,7 +35,7 @@ stack build
 stack exec solitaire-exe
 ```
 
-# Links
+## Links
 - [brick](https://hackage.haskell.org/package/brick), a Haskell terminal user
   interface programming library.
   - [guide.rst](https://github.com/jtdaugherty/brick/blob/master/docs/guide.rst),
