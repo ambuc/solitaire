@@ -20,7 +20,7 @@
 
 ## Essay
 For more background on this project, [read the blog
-post](https://jbuckland.com/2017/12/02/solitaire.html) I wrote about developing it.
+post](https://jbuckland.com/blog/game-solitaire/) I wrote about developing it.
 
 ## Prerequisites
 You'll need to install:
